@@ -11,11 +11,14 @@ import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.shawn.floatprompter.MainActivity
 import com.shawn.floatprompter.R
@@ -55,6 +58,7 @@ class FloatPrompterService : Service() {
     private var ballDownTime = 0L
 
     companion object {
+        private const val TAG = "FloatPrompterService"
         const val ACTION_SHOW_BALL = "com.shawn.floatprompter.SHOW_BALL"
         const val ACTION_SHOW_PROMPTER = "com.shawn.floatprompter.SHOW_PROMPTER"
         const val ACTION_STOP = "com.shawn.floatprompter.STOP"
@@ -71,7 +75,7 @@ class FloatPrompterService : Service() {
         initViewsAndParams()
         setupEngines()
 
-        // 默认直接展开提词器，方便进入相机直接使用；用户可一键点击 ⚪ 收起为小圆圈
+        // 默认直接弹出提词大窗，方便用户直接使用
         showPrompter()
     }
 
@@ -87,12 +91,15 @@ class FloatPrompterService : Service() {
             ACTION_SHOW_PROMPTER -> {
                 showPrompter()
             }
+            else -> {
+                showPrompter()
+            }
         }
         return START_STICKY
     }
 
     private fun startForegroundNotification() {
-        val channelId = "float_prompter_channel"
+        val channelId = "float_prompter_foreground_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -100,6 +107,7 @@ class FloatPrompterService : Service() {
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "保持悬浮窗与灵动小圆球在相机上层持续显示"
+                setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -119,10 +127,11 @@ class FloatPrompterService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // 使用合规的单色矢量图标，避免 BadForegroundServiceNotificationException 崩溃
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("流光提词运行中 🟢")
-            .setContentText("悬浮窗/小圆球已置顶，点小球随时弹起提词")
-            .setSmallIcon(R.drawable.badge_pill)
+            .setContentText("悬浮窗/小球已就绪，点击通知返回主页")
+            .setSmallIcon(R.drawable.ic_notification_prompter)
             .setContentIntent(pendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "关闭悬浮窗", stopIntent)
             .setOngoing(true)
@@ -135,8 +144,12 @@ class FloatPrompterService : Service() {
                 startForeground(1001, notification)
             }
         } catch (e: Exception) {
-            // Android 14 容错降级
-            startForeground(1001, notification)
+            Log.e(TAG, "startForeground error: ${e.message}")
+            try {
+                startForeground(1001, notification)
+            } catch (fallbackEx: Exception) {
+                Log.e(TAG, "startForeground fallback error: ${fallbackEx.message}")
+            }
         }
     }
 
@@ -155,73 +168,97 @@ class FloatPrompterService : Service() {
         val displayMetrics = resources.displayMetrics
         val density = displayMetrics.density
         val screenWidth = displayMetrics.widthPixels
-        val prompterWidth = (prefs.windowWidthDp * density).toInt()
+        
+        // 提词器大窗宽度：适应屏幕，默认占屏幕 85% 左右，最大 360dp
+        val targetWidthDp = (screenWidth / density * 0.88f).toInt().coerceIn(260, 360)
+        val prompterWidth = (targetWidthDp * density).toInt()
 
-        // 1. 提词器大窗布局参数 (居中靠顶，对准前置摄像头)
+        // 1. 提词器大窗布局参数 (居中靠顶，对齐前置摄像头)
         prompterParams = WindowManager.LayoutParams(
             prompterWidth,
-            (380 * density).toInt(),
+            (360 * density).toInt(),
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = (screenWidth - prompterWidth) / 2
-            y = (50 * density).toInt()
-            alpha = prefs.opacity / 100f
+            y = (70 * density).toInt()
+            alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
         }
 
-        // 2. 灵动小圆球布局参数 (贴边靠右侧)
+        // 2. 灵动小圆球布局参数 (贴屏幕右侧边缘)
         val ballSize = (56 * density).toInt()
         ballParams = WindowManager.LayoutParams(
             ballSize,
             ballSize,
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = screenWidth - ballSize - (16 * density).toInt()
-            y = (200 * density).toInt()
+            x = screenWidth - ballSize - (10 * density).toInt()
+            y = (180 * density).toInt()
         }
-
-        // 绑定内容
-        val scriptText = prefs.formattedScript.ifEmpty { prefs.rawScript }
-        prompterBinding.tvPrompterContent.text = scriptText
-        prompterBinding.tvPrompterContent.textSize = prefs.fontSizeSp
 
         setupPrompterControls()
         setupBallTouch()
     }
 
+    @Synchronized
     private fun showPrompter() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Log.w(TAG, "No overlay permission")
+            return
+        }
+
         if (isBallAttached) {
-            try { windowManager.removeView(ballBinding.root) } catch (_: Exception) {}
+            try {
+                windowManager.removeView(ballBinding.root)
+            } catch (e: Exception) {
+                Log.w(TAG, "remove ball failed: ${e.message}")
+            }
             isBallAttached = false
         }
+
         if (!isPrompterAttached) {
             try {
+                // 刷新最新台词与字号
+                val scriptText = prefs.formattedScript.ifEmpty { prefs.rawScript }
+                prompterBinding.tvPrompterContent.text = scriptText
+                prompterBinding.tvPrompterContent.textSize = prefs.fontSizeSp
+                prompterParams.alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
+
                 windowManager.addView(prompterBinding.root, prompterParams)
                 isPrompterAttached = true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "addView prompter failed: ${e.message}")
             }
         }
     }
 
+    @Synchronized
     private fun showBall() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Log.w(TAG, "No overlay permission")
+            return
+        }
+
         if (isPrompterAttached) {
-            try { windowManager.removeView(prompterBinding.root) } catch (_: Exception) {}
+            try {
+                windowManager.removeView(prompterBinding.root)
+            } catch (e: Exception) {
+                Log.w(TAG, "remove prompter failed: ${e.message}")
+            }
             isPrompterAttached = false
         }
+
         if (!isBallAttached) {
             try {
                 windowManager.addView(ballBinding.root, ballParams)
                 isBallAttached = true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "addView ball failed: ${e.message}")
             }
         }
     }
@@ -253,10 +290,10 @@ class FloatPrompterService : Service() {
                     val duration = System.currentTimeMillis() - ballDownTime
 
                     if (deltaX < 20 && deltaY < 20 && duration < 350) {
-                        // 点击小圆球 -> 瞬间弹出提词器大窗！
+                        // 单击小圆球 -> 瞬间弹起提词大窗！
                         showPrompter()
                     } else {
-                        // 拖拽松手 -> 自动平滑吸附到最近屏幕左边缘或右边缘
+                        // 拖动松手 -> 自动平滑吸附到最近屏幕左边缘或右边缘
                         val screenWidth = resources.displayMetrics.widthPixels
                         val density = resources.displayMetrics.density
                         val ballSize = (56 * density).toInt()

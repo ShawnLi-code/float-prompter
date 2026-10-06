@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                 if (pasted.isNotBlank()) {
                     binding.etScriptInput.setText(pasted)
                     autoFormatText()
-                    Toast.makeText(this, "已粘贴并自动完成窄窗排版！", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "已粘贴并自动完成排版！", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
                 }
@@ -169,19 +169,19 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // 6. 开启提词并直接打开相机开拍（核心场景一键触达）
+        // 6. 开启提词并直接打开手机原厂相机（高画质、支持美颜与4K）
         binding.btnLaunchCamera.setOnClickListener {
             if (ensurePrerequisitesReady()) {
-                startFloatingService()
+                startFloatingService(showBall = false)
                 launchDeviceCamera()
             }
         }
 
-        // 7. 仅开启悬浮提词（常驻小圆球与大窗）
+        // 7. 仅显示悬浮球（屏幕边缘常驻小圆球，随时轻点弹出）
         binding.btnStartFloat.setOnClickListener {
             if (ensurePrerequisitesReady()) {
-                startFloatingService()
-                Toast.makeText(this, "🟢 悬浮提词已就绪！点击屏幕边缘小球随时展开", Toast.LENGTH_LONG).show()
+                startFloatingService(showBall = true)
+                Toast.makeText(this, "🟢 悬浮小球已就绪！轻点屏幕边缘【💬 提词】小球即可弹出提词器", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -247,7 +247,7 @@ class MainActivity : AppCompatActivity() {
 
         // 检查悬浮窗权限（SYSTEM_ALERT_WINDOW）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "请开启【显示在其他应用上层】权限，以在相机上方提词", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "请开启【显示在其他应用上层】权限，以在屏幕上显示提词悬浮窗", Toast.LENGTH_LONG).show()
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:$packageName")
@@ -269,9 +269,9 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    private fun startFloatingService() {
+    private fun startFloatingService(showBall: Boolean = false) {
         val serviceIntent = Intent(this, FloatPrompterService::class.java).apply {
-            action = FloatPrompterService.ACTION_SHOW_PROMPTER
+            action = if (showBall) FloatPrompterService.ACTION_SHOW_BALL else FloatPrompterService.ACTION_SHOW_PROMPTER
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
@@ -280,21 +280,56 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 打开手机原厂自带的高清专业相机（杜绝低画质彩信录像模式）
+     */
     private fun launchDeviceCamera() {
-        try {
-            val videoCaptureIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        val pm = packageManager
+
+        // 优先探测主流手机厂商的原厂相机 App 包名
+        val oemCameraPackages = listOf(
+            "com.android.camera",               // 小米 / 红米 MIUI & HyperOS 原厂相机
+            "com.miui.camera",
+            "com.oppo.camera",                  // OPPO / 一加 ColorOS 原厂相机
+            "com.oneplus.camera",
+            "com.vivo.camera",                  // vivo / iQOO OriginOS 原厂相机
+            "com.huawei.camera",                // 华为 HarmonyOS 原厂相机
+            "com.hihonor.camera",               // 荣耀 MagicOS 原厂相机
+            "com.sec.android.app.camera",       // 三星 OneUI 原厂高清相机
+            "com.google.android.GoogleCamera",  // 谷歌 Pixel 原厂相机
+            "com.motorola.cameraone",           // 摩托罗拉
+            "com.meizu.media.camera",           // 魅族 Flyme
+            "com.transsion.camera"              // 传音
+        )
+
+        var launched = false
+        for (pkg in oemCameraPackages) {
+            val launchIntent = pm.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                try {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launchIntent)
+                    launched = true
+                    break
+                } catch (_: Exception) {}
             }
-            startActivity(videoCaptureIntent)
-        } catch (_: Exception) {
+        }
+
+        // 如果未命中特定厂商包名，唤起标准的独立静态相机 Intent (非低画质彩信录像 Intent)
+        if (!launched) {
             try {
                 val stillCameraIntent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                startActivity(stillCameraIntent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "无法自动打开系统相机，请手动切换到相机", Toast.LENGTH_SHORT).show()
-            }
+                if (stillCameraIntent.resolveActivity(pm) != null) {
+                    startActivity(stillCameraIntent)
+                    launched = true
+                }
+            } catch (_: Exception) {}
+        }
+
+        if (!launched) {
+            Toast.makeText(this, "提词悬浮窗已就绪，请手动点开您的相机App即可", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -356,7 +391,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startDownloadAndInstall(downloadUrl: String) {
-        // Android 8.0+ 检查未知来源安装权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!packageManager.canRequestPackageInstalls()) {
                 Toast.makeText(this, "请开启【允许安装来自此来源的应用】以完成覆盖升级", Toast.LENGTH_LONG).show()

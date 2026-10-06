@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir -p release_output
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v1.0.1"; fi
+          if [ -z "$TAG" ]; then TAG="v1.0.2"; fi
           cp app/build/outputs/apk/release/app-release.apk "release_output/FloatPrompter-${TAG}.apk"
           cp app/build/outputs/apk/release/app-release.apk release_output/FloatPrompter-release.apk
           ls -lh release_output/
@@ -52,26 +52,25 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v1.0.1' }}
-          name: 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.1' }} (灵动悬浮小圆球 · 原创专属Logo · 应用内一键覆盖升级)
+          tag_name: ${{ github.ref_name || 'v1.0.2' }}
+          name: 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.2' }} (原厂高清相机适配 · 悬浮球防闪退修复 · UI排版全面优化)
           body: |
-            ### 🎙️ 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.1' }} 重磅升级发布
+            ### 🎙️ 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.2' }} 修复与深度优化发布
 
-            本次更新专门针对录像实操体验与权限无缝流转做了深度升级：
+            针对真实机型反馈进行了全面修复与排版美化：
 
-            #### 🌟 v1.0.1 核心升级亮点：
-            1. **🔴 灵动悬浮小圆球 (双态极速切换)**：
-               - 开启后屏幕边缘常驻【💬 提词】精致小圆球，松手自动平滑贴边吸附；
-               - **单手轻点小圆球 -> 瞬间弹出提词大窗**；
-               - 点击大窗顶栏 **⚪** 按钮 -> 一键收起为小圆球，拍摄/调滤镜完全不遮挡！
-               - 点击 **✕** 按钮一键关闭退出服务。
-            2. **🎨 全新专属原创矢量 Logo**：
-               - 告别通用图标，深度定制流光提词板 + 顶级录音电容麦克风 + 黄金对焦点台词行 + 录像绿信标专属矢量图。
-            3. **📸 一键直达相机开拍**：
-               - 新增「📸 开启并打开相机」快捷操作，提词器展开同时自动调起系统相机，拿起手机直接录！
-            4. **🔄 应用内一键平滑覆盖升级**：
-               - 支持在应用内直连 GitHub 极速镜像检查并一键下载更新；
-               - **完美保留已授权权限**（悬浮窗权限、麦克风权限等）与已编辑的台词草稿，无需反复授权或重复设置！
+            #### 🌟 v1.0.2 核心更新与修复：
+            1. **📸 原厂高清专业相机直达**：
+               - 彻底移除系统低画质录像模式，精准适配小米/红米、OPPO/一加、vivo/iQOO、华为、荣耀、三星等厂商原装原配专业相机，支持 4K/60fps、美颜与滤镜！
+            2. **🛠️ 悬浮窗/小圆球彻底防闪退修复**：
+               - 替换为标准矢量通知图标，解决前台服务 BadNotification 异常；
+               - 优化 WindowManager 视口与层级，确保小圆球在屏幕边缘稳定贴靠，点击必出。
+            3. **🎨 UI 与排版全面重构**：
+               - 解决按钮文字折行重叠、文字与底色冲突问题；
+               - 解决长台词文本框与页面滚动冲突，滑动顺畅不卡手；
+               - 底部控制区重构为独立主次层级，大按钮清晰易点。
+            4. **🔄 应用内无感覆盖升级**：
+               - 所有已开启权限与台词草稿 100% 保留，无需重复配置！
           files: |
             release_output/*.apk
         env:
