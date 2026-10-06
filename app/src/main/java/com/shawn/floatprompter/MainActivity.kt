@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
         updateTextStats(savedRaw)
     }
 
+    private fun setupListeners() {
         // 0. 权限自检引导（针对 OPPO / 小米等定制系统）
         binding.btnPermissionGuide.setOnClickListener {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
