@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir -p release_output
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v1.0.2"; fi
+          if [ -z "$TAG" ]; then TAG="v1.0.3"; fi
           cp app/build/outputs/apk/release/app-release.apk "release_output/FloatPrompter-${TAG}.apk"
           cp app/build/outputs/apk/release/app-release.apk release_output/FloatPrompter-release.apk
           ls -lh release_output/
@@ -52,25 +52,23 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v1.0.2' }}
-          name: 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.2' }} (原厂高清相机适配 · 悬浮球防闪退修复 · UI排版全面优化)
+          tag_name: ${{ github.ref_name || 'v1.0.3' }}
+          name: 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.3' }} (OPPO ColorOS 专项修复 · 悬浮小球零闪退 · 一键权限自检)
           body: |
-            ### 🎙️ 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.2' }} 修复与深度优化发布
+            ### 🎙️ 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.3' }} 深度修复版本
 
-            针对真实机型反馈进行了全面修复与排版美化：
+            本次更新专门针对真实 OPPO Find X (ColorOS 14) 及定制 Android 系统的悬浮窗弹出问题进行了终极底层排查与修复：
 
-            #### 🌟 v1.0.2 核心更新与修复：
-            1. **📸 原厂高清专业相机直达**：
-               - 彻底移除系统低画质录像模式，精准适配小米/红米、OPPO/一加、vivo/iQOO、华为、荣耀、三星等厂商原装原配专业相机，支持 4K/60fps、美颜与滤镜！
-            2. **🛠️ 悬浮窗/小圆球彻底防闪退修复**：
-               - 替换为标准矢量通知图标，解决前台服务 BadNotification 异常；
-               - 优化 WindowManager 视口与层级，确保小圆球在屏幕边缘稳定贴靠，点击必出。
-            3. **🎨 UI 与排版全面重构**：
-               - 解决按钮文字折行重叠、文字与底色冲突问题；
-               - 解决长台词文本框与页面滚动冲突，滑动顺畅不卡手；
-               - 底部控制区重构为独立主次层级，大按钮清晰易点。
-            4. **🔄 应用内无感覆盖升级**：
-               - 所有已开启权限与台词草稿 100% 保留，无需重复配置！
+            #### 🌟 v1.0.3 核心底层修复：
+            1. **🛠️ 修复 Service 内部 InflateException 隐形闪退（关键根因）**：
+               - 排查发现悬浮窗布局使用了依赖 Activity 样式的属性，导致 Service 加载布局时抛出隐形异常闪退；
+               - 现已全面使用 `ContextThemeWrapper` 并在悬浮布局中彻底剥离所有主题依赖属性，**确保悬浮球与大窗 100% 稳妥加载上屏**！
+            2. **⏱️ 消除 WindowManager 视图加载竞态**：
+               - 移除 `onCreate()` 中与 `onStartCommand()` 的连续挂载冲突，严密按需显示悬浮球或提词窗。
+            3. **⚙️ 新增「OPPO / 小米系统权限自检」直达通道**：
+               - 主界面底部增加快捷引导，一键直达系统【权限管理】，帮助确认「悬浮窗」与「后台弹出界面」两项权限。
+            4. **📸 手机原厂原配专业相机精准直达**：
+               - 支持 OPPO 哈苏超光影相机、小米徕卡、vivo 蔡司等原生 4K/60fps、美颜与滤镜录像。
           files: |
             release_output/*.apk
         env:

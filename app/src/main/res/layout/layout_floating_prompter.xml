@@ -42,7 +42,7 @@
             android:gravity="center"
             android:text="⚙️"
             android:textSize="13sp"
-            android:background="?selectableItemBackgroundBorderless" />
+            android:background="@drawable/btn_float_icon_ripple" />
 
         <!-- 播放/暂停 -->
         <TextView
@@ -54,7 +54,7 @@
             android:textColor="@color/accent_emerald"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:background="?selectableItemBackgroundBorderless" />
+            android:background="@drawable/btn_float_icon_ripple" />
 
         <!-- 收起为灵动悬浮球 -->
         <TextView
@@ -65,7 +65,7 @@
             android:text="⚪"
             android:textColor="#38BDF8"
             android:textSize="13sp"
-            android:background="?selectableItemBackgroundBorderless" />
+            android:background="@drawable/btn_float_icon_ripple" />
 
         <!-- 关闭悬浮窗 -->
         <TextView
@@ -77,7 +77,7 @@
             android:textColor="@color/alert_rose"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:background="?selectableItemBackgroundBorderless" />
+            android:background="@drawable/btn_float_icon_ripple" />
     </LinearLayout>
 
     <!-- 可折叠微型调节栏（透明度与速度） -->

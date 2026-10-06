@@ -343,13 +343,17 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/btnPermissionGuide"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="💡 开启后屏幕边缘常驻【💬 提词】灵动小球，点击展开，拍完点 ✕ 关闭"
-            android:textColor="@color/text_muted"
+            android:text="💡 OPPO/小米若未见小球，点此前往【系统权限】开启「悬浮窗」与「后台弹出」"
+            android:textColor="#38BDF8"
             android:textSize="11sp"
             android:gravity="center"
-            android:layout_marginBottom="8dp" />
+            android:paddingVertical="4dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <!-- 核心第一主按钮：开启提词并自动打开手机原厂相机 -->
         <TextView

@@ -85,7 +85,16 @@ class MainActivity : AppCompatActivity() {
         updateTextStats(savedRaw)
     }
 
-    private fun setupListeners() {
+        // 0. 权限自检引导（针对 OPPO / 小米等定制系统）
+        binding.btnPermissionGuide.setOnClickListener {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+            Toast.makeText(this, "OPPO 手机请确认【权限】中的【悬浮窗】与【后台弹出界面】均已允许", Toast.LENGTH_LONG).show()
+        }
+
         // 1. 检查更新按钮
         binding.btnCheckUpdate.setOnClickListener {
             checkUpdateManual()

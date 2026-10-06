@@ -19,6 +19,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
 import com.shawn.floatprompter.MainActivity
 import com.shawn.floatprompter.R
@@ -74,9 +75,6 @@ class FloatPrompterService : Service() {
         startForegroundNotification()
         initViewsAndParams()
         setupEngines()
-
-        // 默认直接弹出提词大窗，方便用户直接使用
-        showPrompter()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -92,7 +90,7 @@ class FloatPrompterService : Service() {
                 showPrompter()
             }
             else -> {
-                showPrompter()
+                showBall()
             }
         }
         return START_STICKY
@@ -154,61 +152,68 @@ class FloatPrompterService : Service() {
     }
 
     private fun initViewsAndParams() {
-        val layoutInflater = LayoutInflater.from(this)
-        prompterBinding = LayoutFloatingPrompterBinding.inflate(layoutInflater)
-        ballBinding = LayoutFloatingBallBinding.inflate(layoutInflater)
+        try {
+            // 使用 ContextThemeWrapper 包裹 Context，防止布局中找不到主题样式导致 InflateException 崩溃
+            val themedContext = ContextThemeWrapper(this, R.style.Theme_FloatPrompter)
+            val layoutInflater = LayoutInflater.from(themedContext)
+            prompterBinding = LayoutFloatingPrompterBinding.inflate(layoutInflater)
+            ballBinding = LayoutFloatingBallBinding.inflate(layoutInflater)
 
-        val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
+            val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+
+            val displayMetrics = resources.displayMetrics
+            val density = displayMetrics.density
+            val screenWidth = displayMetrics.widthPixels
+
+            // 提词器大窗宽度：默认占屏幕约 85%，最大 360dp
+            val targetWidthDp = (screenWidth / density * 0.88f).toInt().coerceIn(260, 360)
+            val prompterWidth = (targetWidthDp * density).toInt()
+
+            // 1. 提词器大窗布局参数 (居中靠顶，对齐前置摄像头)
+            prompterParams = WindowManager.LayoutParams(
+                prompterWidth,
+                (360 * density).toInt(),
+                layoutType,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.START
+                x = (screenWidth - prompterWidth) / 2
+                y = (70 * density).toInt()
+                alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
+            }
+
+            // 2. 灵动小圆球布局参数 (贴屏幕右侧边缘)
+            val ballSize = (56 * density).toInt()
+            ballParams = WindowManager.LayoutParams(
+                ballSize,
+                ballSize,
+                layoutType,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.START
+                x = screenWidth - ballSize - (10 * density).toInt()
+                y = (180 * density).toInt()
+            }
+
+            setupPrompterControls()
+            setupBallTouch()
+        } catch (e: Throwable) {
+            Log.e(TAG, "initViewsAndParams failed: ${e.message}", e)
         }
-
-        val displayMetrics = resources.displayMetrics
-        val density = displayMetrics.density
-        val screenWidth = displayMetrics.widthPixels
-        
-        // 提词器大窗宽度：适应屏幕，默认占屏幕 85% 左右，最大 360dp
-        val targetWidthDp = (screenWidth / density * 0.88f).toInt().coerceIn(260, 360)
-        val prompterWidth = (targetWidthDp * density).toInt()
-
-        // 1. 提词器大窗布局参数 (居中靠顶，对齐前置摄像头)
-        prompterParams = WindowManager.LayoutParams(
-            prompterWidth,
-            (360 * density).toInt(),
-            layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = (screenWidth - prompterWidth) / 2
-            y = (70 * density).toInt()
-            alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
-        }
-
-        // 2. 灵动小圆球布局参数 (贴屏幕右侧边缘)
-        val ballSize = (56 * density).toInt()
-        ballParams = WindowManager.LayoutParams(
-            ballSize,
-            ballSize,
-            layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = screenWidth - ballSize - (10 * density).toInt()
-            y = (180 * density).toInt()
-        }
-
-        setupPrompterControls()
-        setupBallTouch()
     }
 
     @Synchronized
     private fun showPrompter() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Log.w(TAG, "No overlay permission")
+            Toast.makeText(this, "未开启悬浮窗权限，无法展示提词窗", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -221,7 +226,7 @@ class FloatPrompterService : Service() {
             isBallAttached = false
         }
 
-        if (!isPrompterAttached) {
+        if (!isPrompterAttached && ::prompterBinding.isInitialized) {
             try {
                 // 刷新最新台词与字号
                 val scriptText = prefs.formattedScript.ifEmpty { prefs.rawScript }
@@ -231,8 +236,10 @@ class FloatPrompterService : Service() {
 
                 windowManager.addView(prompterBinding.root, prompterParams)
                 isPrompterAttached = true
+                Log.d(TAG, "Prompter window successfully attached to WindowManager")
             } catch (e: Exception) {
-                Log.e(TAG, "addView prompter failed: ${e.message}")
+                Log.e(TAG, "addView prompter failed: ${e.message}", e)
+                Toast.makeText(this, "显示提词窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -241,6 +248,7 @@ class FloatPrompterService : Service() {
     private fun showBall() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Log.w(TAG, "No overlay permission")
+            Toast.makeText(this, "未开启悬浮窗权限，无法展示悬浮球", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -253,12 +261,14 @@ class FloatPrompterService : Service() {
             isPrompterAttached = false
         }
 
-        if (!isBallAttached) {
+        if (!isBallAttached && ::ballBinding.isInitialized) {
             try {
                 windowManager.addView(ballBinding.root, ballParams)
                 isBallAttached = true
+                Log.d(TAG, "Floating ball successfully attached to WindowManager")
             } catch (e: Exception) {
-                Log.e(TAG, "addView ball failed: ${e.message}")
+                Log.e(TAG, "addView ball failed: ${e.message}", e)
+                Toast.makeText(this, "显示悬浮球失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -438,11 +448,11 @@ class FloatPrompterService : Service() {
     override fun onDestroy() {
         pacedScrollEngine?.destroy()
         voiceFollowEngine?.destroy()
-        if (isPrompterAttached) {
+        if (isPrompterAttached && ::prompterBinding.isInitialized) {
             try { windowManager.removeView(prompterBinding.root) } catch (_: Exception) {}
             isPrompterAttached = false
         }
-        if (isBallAttached) {
+        if (isBallAttached && ::ballBinding.isInitialized) {
             try { windowManager.removeView(ballBinding.root) } catch (_: Exception) {}
             isBallAttached = false
         }

@@ -31,12 +31,11 @@
 
     <!-- 运行中绿色微光点 -->
     <View
-        android:layout_width="9dp"
-        android:layout_height="9dp"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
         android:layout_gravity="top|end"
         android:layout_marginTop="5dp"
         android:layout_marginEnd="5dp"
-        android:background="@drawable/badge_pill"
-        android:backgroundTint="#10B981" />
+        android:background="@drawable/ic_green_dot" />
 
 </FrameLayout>
