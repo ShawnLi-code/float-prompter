@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:paddingBottom="100dp">
+
+            <!-- 顶部 Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:gravity="center"
+                    android:text="🎙️"
+                    android:textSize="26sp"
+                    android:background="@drawable/badge_pill" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_name"
+                        android:textColor="@color/text_main"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_subtitle"
+                        android:textColor="@color/text_sub"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片 1：台词稿输入与智能整理 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_rounded"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <!-- 工具条按钮 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <Button
+                        android:id="@+id/btnPaste"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_paste"
+                        android:textColor="@color/text_main"
+                        android:textSize="12sp"
+                        android:background="@drawable/btn_secondary"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnLoadSample"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1.2"
+                        android:text="✨ 6个月法则"
+                        android:textColor="@color/accent_amber"
+                        android:textSize="12sp"
+                        android:background="@drawable/btn_secondary"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnClear"
+                        android:layout_width="44dp"
+                        android:layout_height="38dp"
+                        android:text="🗑️"
+                        android:textSize="14sp"
+                        android:background="@drawable/btn_secondary" />
+                </LinearLayout>
+
+                <!-- 台词文本编辑框 -->
+                <EditText
+                    android:id="@+id/etScriptInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:background="#0A0E17"
+                    android:gravity="top|start"
+                    android:hint="@string/hint_input_script"
+                    android:textColor="@color/text_main"
+                    android:textColorHint="@color/text_muted"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:padding="12dp"
+                    android:scrollbars="vertical" />
+
+                <!-- 字数与时长统计 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <TextView
+                        android:id="@+id/tvWordCountStat"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="统计：0 字 ｜ 预计 0 秒"
+                        android:textColor="@color/text_sub"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvFormatStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="未排版"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 核心：一键智能整理大按钮 -->
+                <Button
+                    android:id="@+id/btnAutoFormat"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:text="⚡ 自动整理为适合悬浮窗的短句格式"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:background="@drawable/btn_primary"
+                    android:layout_marginTop="12dp" />
+
+                <!-- 过滤舞台动作选项 -->
+                <CheckBox
+                    android:id="@+id/cbFilterStage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="自动过滤括号动作提示（如：看一眼镜头、叹气）"
+                    android:textColor="@color/text_sub"
+                    android:textSize="12sp"
+                    android:checked="true"
+                    android:layout_marginTop="6dp" />
+
+            </LinearLayout>
+
+            <!-- 卡片 2：悬浮窗运行设置 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_rounded"
+                android:padding="16dp"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚙️ 悬浮窗滚屏设置"
+                    android:textColor="@color/text_main"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- 模式切换：匀速 vs 跟读 -->
+                <RadioGroup
+                    android:id="@+id/rgScrollMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbModeSpeed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/mode_speed"
+                        android:textColor="@color/text_main"
+                        android:textSize="13sp"
+                        android:checked="true" />
+
+                    <RadioButton
+                        android:id="@+id/rbModeVoice"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/mode_voice"
+                        android:textColor="@color/text_main"
+                        android:textSize="13sp" />
+                </RadioGroup>
+
+                <!-- 语速滑块调节 -->
+                <LinearLayout
+                    android:id="@+id/layoutSpeedSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="默认滚屏语速档位"
+                            android:textColor="@color/text_sub"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvSpeedDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="4 档 (正常语速)"
+                            android:textColor="@color/accent_amber"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <SeekBar
+                        android:id="@+id/seekBarSpeed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:min="1"
+                        android:max="10"
+                        android:progress="4"
+                        android:layout_marginTop="6dp" />
+                </LinearLayout>
+
+                <!-- 默认透明度调节 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="默认窗口透明度"
+                            android:textColor="@color/text_sub"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvOpacityDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="80%"
+                            android:textColor="@color/primary_indigo_light"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <SeekBar
+                        android:id="@+id/seekBarOpacity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:min="20"
+                        android:max="100"
+                        android:progress="80"
+                        android:layout_marginTop="6dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部固定悬浮按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#E60B0F19"
+        android:padding="16dp"
+        android:elevation="10dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnStartFloat"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:text="@string/btn_start_float"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/btn_primary" />
+
+        <Button
+            android:id="@+id/btnStopFloat"
+            android:layout_width="100dp"
+            android:layout_height="52dp"
+            android:text="关闭"
+            android:textColor="@color/alert_rose"
+            android:textSize="14sp"
+            android:background="@drawable/btn_secondary"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

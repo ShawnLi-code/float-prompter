@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#0B0F19</color>
+    <color name="bg_card">#161F30</color>
+    <color name="bg_card_stroke">#26334D</color>
+    
+    <color name="primary_indigo">#6366F1</color>
+    <color name="primary_indigo_light">#818CF8</color>
+    <color name="accent_emerald">#10B981</color>
+    <color name="accent_amber">#FBBF24</color>
+    <color name="alert_rose">#F43F5E</color>
+
+    <color name="text_main">#F8FAFC</color>
+    <color name="text_sub">#94A3B8</color>
+    <color name="text_muted">#64748B</color>
+
+    <!-- 悬浮窗专用色彩 -->
+    <color name="float_bg">#D90F172A</color> <!-- 85% alpha dark -->
+    <color name="float_text_normal">#FFFFFF</color>
+    <color name="float_text_highlight">#FACC15</color> <!-- 亮黄色高亮行 -->
+    <color name="float_text_stage">#94A3B8</color> <!-- 动作提示淡灰色 -->
+    <color name="float_border">#38BDF8</color>
+</resources>

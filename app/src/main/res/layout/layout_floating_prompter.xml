@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootFloatingView"
+    android:layout_width="240dp"
+    android:layout_height="380dp"
+    android:orientation="vertical"
+    android:background="@drawable/float_window_bg"
+    android:padding="8dp">
+
+    <!-- 顶部抓手与控制顶栏（点击可折叠面板，长按拖动窗口） -->
+    <LinearLayout
+        android:id="@+id/layoutDragBar"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="4dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⠿"
+            android:textColor="#38BDF8"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingEnd="6dp" />
+
+        <TextView
+            android:id="@+id/tvModeIndicator"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⏱️ 匀速"
+            android:textColor="@color/text_main"
+            android:textSize="11sp" />
+
+        <!-- 切换控制条 -->
+        <TextView
+            android:id="@+id/btnToggleSettings"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:gravity="center"
+            android:text="⚙️"
+            android:textSize="13sp"
+            android:background="?selectableItemBackgroundBorderless" />
+
+        <!-- 播放/暂停 -->
+        <TextView
+            android:id="@+id/btnPlayPause"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:gravity="center"
+            android:text="▶"
+            android:textColor="@color/accent_emerald"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:background="?selectableItemBackgroundBorderless" />
+
+        <!-- 关闭悬浮窗 -->
+        <TextView
+            android:id="@+id/btnCloseFloat"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:gravity="center"
+            android:text="✕"
+            android:textColor="@color/alert_rose"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:background="?selectableItemBackgroundBorderless" />
+    </LinearLayout>
+
+    <!-- 可折叠微型调节栏（透明度与速度） -->
+    <LinearLayout
+        android:id="@+id/layoutMiniSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#33000000"
+        android:padding="6dp"
+        android:visibility="gone">
+
+        <!-- 透明度快速切换 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="透明度:"
+                android:textColor="@color/text_sub"
+                android:textSize="10sp" />
+            <TextView
+                android:id="@+id/btnAlphaLow"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="22dp"
+                android:gravity="center"
+                android:text="35%"
+                android:textColor="@color/text_main"
+                android:textSize="10sp" />
+            <TextView
+                android:id="@+id/btnAlphaMed"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="22dp"
+                android:gravity="center"
+                android:text="65%"
+                android:textColor="@color/text_main"
+                android:textSize="10sp" />
+            <TextView
+                android:id="@+id/btnAlphaHigh"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="22dp"
+                android:gravity="center"
+                android:text="90%"
+                android:textColor="@color/text_main"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <!-- 速度调节 -->
+        <LinearLayout
+            android:id="@+id/rowSpeedControl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="语速:"
+                android:textColor="@color/text_sub"
+                android:textSize="10sp" />
+            <TextView
+                android:id="@+id/btnSpeedDown"
+                android:layout_width="30dp"
+                android:layout_height="22dp"
+                android:gravity="center"
+                android:text="➖"
+                android:textSize="9sp" />
+            <TextView
+                android:id="@+id/tvSpeedValue"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="4档"
+                android:textColor="@color/accent_amber"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/btnSpeedUp"
+                android:layout_width="30dp"
+                android:layout_height="22dp"
+                android:gravity="center"
+                android:text="➕"
+                android:textSize="9sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 焦点线指示微标记（帮助视线对准） -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#20FFFFFF"
+        android:layout_marginVertical="2dp" />
+
+    <!-- 台词滚动主视口 -->
+    <ScrollView
+        android:id="@+id/scrollViewPrompter"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none"
+        android:fadingEdgeLength="24dp"
+        android:requiresFadingEdge="vertical">
+
+        <LinearLayout
+            android:id="@+id/layoutScriptContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="30dp"
+            android:paddingBottom="120dp">
+
+            <TextView
+                android:id="@+id/tvPrompterContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/float_text_normal"
+                android:textSize="18sp"
+                android:lineSpacingExtra="8dp"
+                android:textStyle="bold"
+                android:shadowColor="#CC000000"
+                android:shadowDx="1"
+                android:shadowDy="2"
+                android:shadowRadius="3" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 底部复位快速按钮 -->
+    <TextView
+        android:id="@+id/btnResetToTop"
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:gravity="center"
+        android:text="⏫ 双击复位到顶部"
+        android:textColor="@color/text_muted"
+        android:textSize="9sp" />
+
+</LinearLayout>
