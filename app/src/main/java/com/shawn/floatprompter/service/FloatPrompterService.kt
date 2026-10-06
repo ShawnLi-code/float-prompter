@@ -102,7 +102,7 @@ class FloatPrompterService : Service() {
             widthPx,
             (380 * density).toInt(),
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUS_WINDOW or
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
