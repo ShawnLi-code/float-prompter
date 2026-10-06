@@ -56,11 +56,22 @@
             android:textStyle="bold"
             android:background="?selectableItemBackgroundBorderless" />
 
+        <!-- 收起为灵动悬浮球 -->
+        <TextView
+            android:id="@+id/btnMinimizeFloat"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:gravity="center"
+            android:text="⚪"
+            android:textColor="#38BDF8"
+            android:textSize="13sp"
+            android:background="?selectableItemBackgroundBorderless" />
+
         <!-- 关闭悬浮窗 -->
         <TextView
             android:id="@+id/btnCloseFloat"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:gravity="center"
             android:text="✕"
             android:textColor="@color/alert_rose"

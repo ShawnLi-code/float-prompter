@@ -36,38 +36,43 @@ jobs:
       - name: Rename and Prepare APK
         run: |
           mkdir -p release_output
-          cp app/build/outputs/apk/release/app-release.apk release_output/FloatPrompter-v1.0.0.apk
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ]; then TAG="v1.0.1"; fi
+          cp app/build/outputs/apk/release/app-release.apk "release_output/FloatPrompter-${TAG}.apk"
+          cp app/build/outputs/apk/release/app-release.apk release_output/FloatPrompter-release.apk
           ls -lh release_output/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FloatPrompter-v1.0.0-APK
-          path: release_output/FloatPrompter-v1.0.0.apk
+          name: FloatPrompter-Release-APK
+          path: release_output/*.apk
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v1.0.0' }}
-          name: 流光提词 (FloatPrompter) v1.0.0 (口播创作者专属 · 窄窗悬浮 · 语音跟读)
+          tag_name: ${{ github.ref_name || 'v1.0.1' }}
+          name: 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.1' }} (灵动悬浮小圆球 · 原创专属Logo · 应用内一键覆盖升级)
           body: |
-            ### 🎙️ 流光提词 (FloatPrompter) v1.0.0 正式发布
+            ### 🎙️ 流光提词 (FloatPrompter) ${{ github.ref_name || 'v1.0.1' }} 重磅升级发布
 
-            专门为短视频/小红书/口播创作者量身打造的高效手机悬浮提词器！
+            本次更新专门针对录像实操体验与权限无缝流转做了深度升级：
 
-            #### ✨ 核心功能亮点：
-            1. **🪟 自由拖拽与屏幕吸附**：
-               - 支持悬浮在系统原生相机前面，手指触摸随心拖拽，紧贴前置摄像头；
-            2. **🕶️ 动态透明度调节**：
-               - 随时切换 35%、65%、90% 半透明磨砂底色，既能看清自己的表情，也能看清台词；
-            3. **⚡ 智能长文断句与窄窗排版**：
-               - 粘贴长文后一键整理，自动过滤无用舞台括号，切分为每行 8~12 字的黄金视线窄句，**彻底解决录口播眼球左右乱晃的尴尬**；
-            4. **⏱️ 双模滚屏（匀速调速 + 麦克风语音跟读）**：
-               - 支持 1~10 档平滑滚屏，或开启麦克风读到哪高亮滚到哪；
-            5. **✨ 内置《6个月法则与结果延迟性》爆款脚本**：
-               - 开箱即用，一键载入即可开机录制。
+            #### 🌟 v1.0.1 核心升级亮点：
+            1. **🔴 灵动悬浮小圆球 (双态极速切换)**：
+               - 开启后屏幕边缘常驻【💬 提词】精致小圆球，松手自动平滑贴边吸附；
+               - **单手轻点小圆球 -> 瞬间弹出提词大窗**；
+               - 点击大窗顶栏 **⚪** 按钮 -> 一键收起为小圆球，拍摄/调滤镜完全不遮挡！
+               - 点击 **✕** 按钮一键关闭退出服务。
+            2. **🎨 全新专属原创矢量 Logo**：
+               - 告别通用图标，深度定制流光提词板 + 顶级录音电容麦克风 + 黄金对焦点台词行 + 录像绿信标专属矢量图。
+            3. **📸 一键直达相机开拍**：
+               - 新增「📸 开启并打开相机」快捷操作，提词器展开同时自动调起系统相机，拿起手机直接录！
+            4. **🔄 应用内一键平滑覆盖升级**：
+               - 支持在应用内直连 GitHub 极速镜像检查并一键下载更新；
+               - **完美保留已授权权限**（悬浮窗权限、麦克风权限等）与已编辑的台词草稿，无需反复授权或重复设置！
           files: |
-            release_output/FloatPrompter-v1.0.0.apk
+            release_output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

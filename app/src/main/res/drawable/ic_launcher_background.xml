@@ -3,11 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Deep Sleek Cosmic Background -->
     <path
-        android:fillColor="#090D16"
+        android:fillColor="#090E1A"
         android:pathData="M0,0h108v108h-108z"/>
-    <!-- Subtle Ambient Center Glow -->
+    <!-- Subtle Ambient Nebula Glow in Cyan/Indigo -->
     <path
-        android:fillColor="#151D30"
-        android:pathData="M54,18 A36,36 0 1,1 53.99,18 Z"/>
+        android:fillColor="#172554"
+        android:pathData="M54,20 A34,34 0 1,1 53.99,20 Z"/>
 </vector>
