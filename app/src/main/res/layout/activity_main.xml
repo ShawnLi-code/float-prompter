@@ -99,7 +99,7 @@
                         android:layout_height="38dp"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:text="📋 粘贴台词"
+                        android:text="📋 粘贴"
                         android:textColor="@color/text_main"
                         android:textSize="12sp"
                         android:textStyle="bold"
@@ -109,12 +109,27 @@
                         android:focusable="true" />
 
                     <TextView
-                        android:id="@+id/btnLoadSample"
+                        android:id="@+id/btnSaveScript"
                         android:layout_width="0dp"
                         android:layout_height="38dp"
-                        android:layout_weight="1.3"
+                        android:layout_weight="1.2"
                         android:gravity="center"
-                        android:text="✨ 6个月法则"
+                        android:text="💾 保存稿件"
+                        android:textColor="#38BDF8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/btn_secondary"
+                        android:layout_marginEnd="6dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnScriptLibrary"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1.2"
+                        android:gravity="center"
+                        android:text="📚 历史稿件"
                         android:textColor="@color/accent_amber"
                         android:textSize="12sp"
                         android:textStyle="bold"
@@ -125,7 +140,7 @@
 
                     <TextView
                         android:id="@+id/btnClear"
-                        android:layout_width="44dp"
+                        android:layout_width="38dp"
                         android:layout_height="38dp"
                         android:gravity="center"
                         android:text="🗑️"
@@ -135,7 +150,7 @@
                         android:focusable="true" />
                 </LinearLayout>
 
-                <!-- 台词文本编辑框（禁止内部拦截全局滚动，让屏幕顺畅滑动） -->
+                <!-- 台词文本编辑框（支持内部上下顺畅滑动） -->
                 <EditText
                     android:id="@+id/etScriptInput"
                     android:layout_width="match_parent"
@@ -148,7 +163,10 @@
                     android:textSize="14sp"
                     android:lineSpacingExtra="4dp"
                     android:padding="12dp"
-                    android:nestedScrollingEnabled="false" />
+                    android:inputType="textMultiLine"
+                    android:scrollbars="vertical"
+                    android:overScrollMode="always"
+                    android:isScrollContainer="true" />
 
                 <!-- 字数与时长统计 -->
                 <LinearLayout
@@ -181,7 +199,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="46dp"
                     android:gravity="center"
-                    android:text="⚡ 自动整理为适合悬浮窗的短句格式"
+                    android:text="⚡ 自动整句排版（一句话结束才换行，逗号不打碎）"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"
                     android:textSize="13sp"
@@ -190,16 +208,36 @@
                     android:clickable="true"
                     android:focusable="true" />
 
-                <!-- 过滤舞台动作选项 -->
-                <CheckBox
-                    android:id="@+id/cbFilterStage"
-                    android:layout_width="wrap_content"
+                <!-- 过滤动作与载入示例辅助行 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="自动过滤括号动作提示（如：看一眼镜头、叹气）"
-                    android:textColor="@color/text_sub"
-                    android:textSize="12sp"
-                    android:checked="true"
-                    android:layout_marginTop="6dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbFilterStage"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="过滤动作（如：叹气、看镜头）"
+                        android:textColor="@color/text_sub"
+                        android:textSize="11sp"
+                        android:checked="true" />
+
+                    <TextView
+                        android:id="@+id/btnLoadSample"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:text="✨ 试用《6个月法则》示例"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
 
             </LinearLayout>
 

@@ -12,15 +12,16 @@ object ScriptFormatter {
     )
 
     /**
-     * 将原始长文本自动整理为适合口播悬浮窗展示的黄金短句格式
+     * 将长文本台词自动整理为适合口播提词的自然整句格式
+     * 核心规则：一句话完整结束后才换行（逗号、顿号绝不拆散），保持语意完整连贯
      * @param rawText 原始文本
-     * @param filterStage 是否过滤掉舞台/动作提示（如括号里的字）
-     * @param maxCharsPerLine 每行目标字数（推荐 8~12 字）
+     * @param filterStage 是否过滤掉舞台/动作提示（如括号里的动作字样）
+     * @param maxSentenceChars 单句最大字数限制（极长且无标点时才平滑分段，默认 60 字）
      */
     fun formatForTeleprompter(
         rawText: String,
         filterStage: Boolean = true,
-        maxCharsPerLine: Int = 11
+        maxSentenceChars: Int = 60
     ): FormatResult {
         if (rawText.isBlank()) {
             return FormatResult("", emptyList(), 0, 0)
@@ -28,56 +29,54 @@ object ScriptFormatter {
 
         var text = rawText
 
-        // 1. 过滤 Markdown 标题与装饰符
+        // 1. 过滤 Markdown 标记与修饰符
         text = text.replace(Regex("(?m)^[#\\->*]+\\s*"), "")
         text = text.replace("**", "").replace("__", "")
 
-        // 2. 识别并处理中英文括号中的舞台/神态提示
-        val stagePattern = Pattern.compile("（[^）]*）|\\([^)]*\\)|【[^】]*】")
+        // 2. 识别并过滤中英文括号中的动作神态提示（例如：（看一眼镜头）、(停顿1秒)、【笑】）
         if (filterStage) {
+            val stagePattern = Pattern.compile("（[^）]*）|\\([^)]*\\)|【[^】]*】")
             text = stagePattern.matcher(text).replaceAll("")
-        } else {
-            // 如果保留动作，将其独占一行
-            text = stagePattern.matcher(text).replaceAll("\n$0\n")
         }
 
-        // 3. 基于标点符号断句（，。！？；…：\n）
-        val delimiters = "([，。！？；…\n]+)"
-        val rawTokens = text.split(Regex(delimiters))
-
+        // 3. 按原始换行和句子终止符（句号、感叹号、问号、分号）进行自然完整断句
+        // 保持逗号、顿号、破折号在整句内，绝不碎片化
+        val rawParagraphs = text.lines()
         val finalLines = mutableListOf<String>()
 
-        for (token in rawTokens) {
-            val trimmed = token.trim()
-            if (trimmed.isEmpty()) continue
+        for (paragraph in rawParagraphs) {
+            val trimmedPara = paragraph.trim()
+            if (trimmedPara.isEmpty()) continue
 
-            // 如果这一句太长（超过 maxCharsPerLine），进一步切细
-            if (trimmed.length > maxCharsPerLine + 3) {
-                val subChunks = splitLongSentence(trimmed, maxCharsPerLine)
-                finalLines.addAll(subChunks)
-            } else {
-                finalLines.add(trimmed)
+            // 使用句子终止标点（。！？；!?）切分段落为完整语义句，同时保留终止标点
+            val sentenceTokens = splitBySentenceEnd(trimmedPara)
+
+            for (sentence in sentenceTokens) {
+                val cleanSentence = sentence.trim()
+                if (cleanSentence.isEmpty()) continue
+
+                // 仅当整句极端冗长（超过 60 字且无断句）时才分行，避免视线过长
+                if (cleanSentence.length > maxSentenceChars) {
+                    val subChunks = cleanSentence.chunked(maxSentenceChars)
+                    finalLines.addAll(subChunks)
+                } else {
+                    finalLines.add(cleanSentence)
+                }
             }
         }
 
-        // 4. 重建带有节奏空行的悬浮窗文本
+        // 4. 生成换行文本（每句独立成行，保留舒适自然的行间节奏）
         val builder = StringBuilder()
-        var chunkCount = 0
         for (line in finalLines) {
             builder.append(line).append("\n")
-            chunkCount++
-            // 每 4 个短句加一个轻微呼吸空行
-            if (chunkCount % 4 == 0) {
-                builder.append("\n")
-            }
         }
 
-        // 统计汉字与单词数
+        // 5. 统计字数与预估用时
         val cleanChineseCount = text.count { it in '\u4e00'..'\u9fa5' }
         val englishWords = text.split(Regex("\\s+")).count { it.matches(Regex("[a-zA-Z]+")) }
         val totalWordCount = cleanChineseCount + englishWords
         // 按正常中文口播语速 165 字/分钟 计算预估时长
-        val estimatedSec = if (totalWordCount > 0) (totalWordCount * 60 / 165).coerceAtLeast(5) else 0
+        val estimatedSec = if (totalWordCount > 0) (totalWordCount * 60 / 165).coerceAtLeast(3) else 0
 
         return FormatResult(
             formattedText = builder.toString().trimEnd(),
@@ -88,37 +87,24 @@ object ScriptFormatter {
     }
 
     /**
-     * 将长句子按语意或字数均匀切开为短句
+     * 将段落按句末标点符号拆分为完整句子，标点保留在句末
      */
-    private fun splitLongSentence(sentence: String, maxChars: Int): List<String> {
+    private fun splitBySentenceEnd(text: String): List<String> {
         val result = mutableListOf<String>()
-        var remaining = sentence
+        val current = StringBuilder()
 
-        // 常见口语连接词断点
-        val breakKeywords = listOf("因为", "所以", "但是", "而且", "然后", "结果", "哪怕", "万一", "其实", "也就是说")
-
-        while (remaining.length > maxChars + 3) {
-            var cutIndex = -1
-
-            // 优先在连接词前切断
-            for (kw in breakKeywords) {
-                val pos = remaining.indexOf(kw)
-                if (pos in 4..(maxChars + 2)) {
-                    cutIndex = pos
-                    break
+        for (char in text) {
+            current.append(char)
+            if (char == '。' || char == '！' || char == '？' || char == '!' || char == '?' || char == '；') {
+                val sentence = current.toString().trim()
+                if (sentence.isNotEmpty()) {
+                    result.add(sentence)
                 }
+                current.clear()
             }
-
-            // 如果没找到连接词，在中点或 maxChars 处硬切
-            if (cutIndex == -1) {
-                cutIndex = maxChars.coerceAtMost(remaining.length)
-            }
-
-            val part = remaining.substring(0, cutIndex).trim()
-            if (part.isNotEmpty()) result.add(part)
-            remaining = remaining.substring(cutIndex).trim()
         }
 
+        val remaining = current.toString().trim()
         if (remaining.isNotEmpty()) {
             result.add(remaining)
         }

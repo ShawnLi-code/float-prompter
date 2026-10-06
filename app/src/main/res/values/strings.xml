@@ -5,12 +5,12 @@
     <string name="btn_start_float">🎙️ 开启悬浮提词</string>
     <string name="btn_stop_float">⏹️ 关闭悬浮窗</string>
     <string name="btn_paste">📋 从剪贴板粘贴</string>
-    <string name="btn_auto_format">⚡ 智能整理格式</string>
-    <string name="btn_load_sample">✨ 导入《6个月法则》爆款脚本</string>
+    <string name="btn_auto_format">⚡ 自动整句排版</string>
+    <string name="btn_load_sample">✨ 导入《6个月法则》示例台词</string>
     <string name="btn_clear">🗑️ 清空</string>
 
-    <string name="hint_input_script">在此粘贴或输入你的口播台词稿……\n点击“智能整理格式”将自动去除无用括号，并切分为每行 8~12 字的黄金视线窄窗格式！</string>
+    <string name="hint_input_script">在此粘贴或输入你的口播台词稿……\n点击【⚡ 自动整句排版】将自动过滤动作神态，保留语义完整的整句话（一句话讲完才换行，逗号顿号不拆碎）！</string>
 
-    <string name="mode_speed">⏱️ 定时匀速滚屏</string>
+    <string name="mode_speed">⏱️ 定时匀速滚屏 (推荐)</string>
     <string name="mode_voice">🎙️ 麦克风语音跟读</string>
 </resources>

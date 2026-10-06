@@ -13,7 +13,10 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.method.ScrollingMovementMethod
+import android.view.MotionEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,26 +26,32 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.shawn.floatprompter.data.PrompterPrefs
 import com.shawn.floatprompter.data.SampleScripts
+import com.shawn.floatprompter.data.SavedScript
+import com.shawn.floatprompter.data.ScriptManager
 import com.shawn.floatprompter.databinding.ActivityMainBinding
 import com.shawn.floatprompter.engine.ScriptFormatter
 import com.shawn.floatprompter.service.FloatPrompterService
 import com.shawn.floatprompter.update.UpdateManager
 import com.shawn.floatprompter.update.VersionInfo
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrompterPrefs
+    private lateinit var scriptManager: ScriptManager
 
     // 麦克风录音权限申请
     private val requestAudioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Toast.makeText(this, "麦克风权限已开启，可使用语音跟读", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "麦克风权限已开启", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "未授予麦克风权限，将使用定时匀速滚屏", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "未授予麦克风权限，自动切回定时匀速滚屏", Toast.LENGTH_SHORT).show()
             binding.rbModeSpeed.isChecked = true
         }
     }
@@ -53,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = PrompterPrefs(this)
+        scriptManager = ScriptManager(this)
 
         initViewsAndSavedData()
         setupListeners()
@@ -64,9 +74,19 @@ class MainActivity : AppCompatActivity() {
     private fun initViewsAndSavedData() {
         binding.tvVersionInfo.text = "v${BuildConfig.VERSION_NAME} • 流光提词"
 
-        // 默认载入用户之前的草稿或《6个月法则》口播文案
-        val savedRaw = prefs.rawScript.ifEmpty { SampleScripts.DEFAULT_SCRIPT_CONTENT }
+        // 仅载入用户之前编辑的真实草稿，不主动强行注入任何示例文案
+        val savedRaw = prefs.rawScript
         binding.etScriptInput.setText(savedRaw)
+
+        // 核心：设置输入框内部独立纵向顺畅滑动（解决外层 NestedScrollView 拦截滑动事件的问题）
+        binding.etScriptInput.movementMethod = ScrollingMovementMethod.getInstance()
+        binding.etScriptInput.setOnTouchListener { v, event ->
+            v.parent?.requestDisallowInterceptTouchEvent(true)
+            if ((event.action and MotionEvent.ACTION_MASK) == MotionEvent.ACTION_UP) {
+                v.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+            false
+        }
 
         binding.seekBarSpeed.progress = prefs.scrollSpeed
         binding.tvSpeedDisplay.text = "${prefs.scrollSpeed} 档"
@@ -110,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                 if (pasted.isNotBlank()) {
                     binding.etScriptInput.setText(pasted)
                     autoFormatText()
-                    Toast.makeText(this, "已粘贴并自动完成排版！", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "已粘贴并完成整句排版！", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
                 }
@@ -119,22 +139,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 3. 导入《6个月法则》样本
+        // 3. 💾 保存稿件到本地稿件库
+        binding.btnSaveScript.setOnClickListener {
+            showSaveScriptDialog()
+        }
+
+        // 4. 📚 查看并调用历史稿件库
+        binding.btnScriptLibrary.setOnClickListener {
+            showScriptLibraryDialog()
+        }
+
+        // 5. 导入《6个月法则》样本（仅在用户主动点击时才载入）
         binding.btnLoadSample.setOnClickListener {
             binding.etScriptInput.setText(SampleScripts.DEFAULT_SCRIPT_CONTENT)
             autoFormatText()
-            Toast.makeText(this, "已载入《6个月法则》口播稿！", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "已载入《6个月法则》示例台词！", Toast.LENGTH_SHORT).show()
         }
 
-        // 4. 清空
+        // 6. 清空
         binding.btnClear.setOnClickListener {
             binding.etScriptInput.setText("")
             prefs.rawScript = ""
             prefs.formattedScript = ""
+            binding.tvFormatStatus.text = "已清空"
+            binding.tvFormatStatus.setTextColor(getColor(R.color.text_muted))
             updateTextStats("")
         }
 
-        // 5. 核心：智能整理排版
+        // 7. 核心：整句智能排版（一句话讲完才换行，逗号不打碎）
         binding.btnAutoFormat.setOnClickListener {
             autoFormatText()
         }
@@ -155,6 +187,11 @@ class MainActivity : AppCompatActivity() {
             binding.layoutSpeedSettings.visibility = if (isVoice) View.GONE else View.VISIBLE
 
             if (isVoice) {
+                Toast.makeText(
+                    this,
+                    "💡 国内手机系统（OPPO/小米等）因缺少谷歌语音服务可能无法跟读，强烈推荐使用稳定的【⏱️ 匀速滚屏】",
+                    Toast.LENGTH_LONG
+                ).show()
                 checkAudioPermission()
             }
         }
@@ -179,7 +216,7 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // 6. 开启提词并直接打开手机原厂相机（高画质、支持美颜与4K）
+        // 8. 开启提词并直接打开手机原厂相机（高画质、支持美颜与4K）
         binding.btnLaunchCamera.setOnClickListener {
             if (ensurePrerequisitesReady()) {
                 startFloatingService(showBall = false)
@@ -187,15 +224,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 7. 仅显示悬浮球（屏幕边缘常驻小圆球，随时轻点弹出）
+        // 9. 仅显示悬浮球（屏幕边缘常驻小圆球，随时轻点弹出）
         binding.btnStartFloat.setOnClickListener {
             if (ensurePrerequisitesReady()) {
                 startFloatingService(showBall = true)
-                Toast.makeText(this, "🟢 悬浮小球已就绪！轻点屏幕边缘【💬 提词】小球即可弹出提词器", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "🟢 悬浮小球已就绪！轻点屏幕边缘小球即可弹出提词器", Toast.LENGTH_LONG).show()
             }
         }
 
-        // 8. 关闭悬浮窗
+        // 10. 关闭悬浮窗
         binding.btnStopFloat.setOnClickListener {
             val stopIntent = Intent(this, FloatPrompterService::class.java).apply {
                 action = FloatPrompterService.ACTION_STOP
@@ -219,13 +256,13 @@ class MainActivity : AppCompatActivity() {
         prefs.formattedScript = result.formattedText
         binding.etScriptInput.setText(result.formattedText)
 
-        binding.tvFormatStatus.text = "✅ 窄窗格式已就绪"
+        binding.tvFormatStatus.text = "✅ 完整整句格式已就绪"
         binding.tvFormatStatus.setTextColor(getColor(R.color.accent_emerald))
         updateTextStats(result.formattedText)
 
         Toast.makeText(
             this,
-            "排版完成！共 ${result.wordCount} 字，预计 ${result.estimatedSeconds} 秒",
+            "整句排版完成！共 ${result.wordCount} 字，预计 ${result.estimatedSeconds} 秒",
             Toast.LENGTH_SHORT
         ).show()
     }
@@ -235,7 +272,87 @@ class MainActivity : AppCompatActivity() {
         val estSeconds = if (wordCount > 0) (wordCount * 60 / 165).coerceAtLeast(3) else 0
         val lineCount = text.lines().count { it.isNotBlank() }
 
-        binding.tvWordCountStat.text = "统计：$wordCount 字 ｜ 预计 $estSeconds 秒 ｜ $lineCount 行"
+        binding.tvWordCountStat.text = "统计：$wordCount 字 ｜ 预计 $estSeconds 秒 ｜ $lineCount 句"
+    }
+
+    // ==================== 💾 稿件库管理交互 ====================
+
+    private fun showSaveScriptDialog() {
+        val content = binding.etScriptInput.text.toString().trim()
+        if (content.isBlank()) {
+            Toast.makeText(this, "台词内容为空，无法保存", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val defaultTitle = content.lines().firstOrNull { it.isNotBlank() }?.take(16)?.trim()
+            ?: "台词稿_${SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date())}"
+
+        val inputView = EditText(this).apply {
+            setText(defaultTitle)
+            setSelection(text.length)
+            setPadding(48, 36, 48, 36)
+            setTextColor(getColor(R.color.text_main))
+            textSize = 14f
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("💾 保存当前台词稿")
+            .setMessage("为这篇台词输入一个标题：")
+            .setView(inputView)
+            .setPositiveButton("确认保存") { _, _ ->
+                val title = inputView.text.toString().trim().ifEmpty { defaultTitle }
+                val wordCount = content.count { it in '\u4e00'..'\u9fa5' || it.isLetter() }
+                val estSec = if (wordCount > 0) (wordCount * 60 / 165).coerceAtLeast(3) else 0
+                scriptManager.saveScript(title, content, wordCount, estSec)
+                Toast.makeText(this, "稿件《$title》已成功存入历史库！", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showScriptLibraryDialog() {
+        val scripts = scriptManager.getAllScripts()
+        if (scripts.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("📚 历史稿件库")
+                .setMessage("暂无保存的稿件记录。\n\n💡 提示：在上方文本框写好或粘贴台词后，点击【💾 保存稿件】即可永久留存，随时一键调用！")
+                .setPositiveButton("知道了", null)
+                .show()
+            return
+        }
+
+        val items = scripts.map { script ->
+            val dateStr = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(script.updatedAt))
+            "📝 ${script.title}\n    ${script.wordCount}字 · 约${script.estimatedSeconds}秒 · $dateStr"
+        }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("📚 历史稿件库 (${scripts.size}篇)")
+            .setItems(items) { _, which ->
+                val selected = scripts[which]
+                showScriptActionDialog(selected)
+            }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    private fun showScriptActionDialog(script: SavedScript) {
+        val preview = if (script.content.length > 100) script.content.take(100) + "..." else script.content
+        AlertDialog.Builder(this)
+            .setTitle("《${script.title}》")
+            .setMessage("字数：${script.wordCount} 字 ｜ 预计用时：${script.estimatedSeconds} 秒\n\n正文预览：\n$preview")
+            .setPositiveButton("✅ 载入使用") { _, _ ->
+                binding.etScriptInput.setText(script.content)
+                prefs.rawScript = script.content
+                autoFormatText()
+                Toast.makeText(this, "已载入《${script.title}》！", Toast.LENGTH_SHORT).show()
+            }
+            .setNeutralButton("🗑️ 删除此稿") { _, _ ->
+                scriptManager.deleteScript(script.id)
+                Toast.makeText(this, "已删除《${script.title}》", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun ensurePrerequisitesReady(): Boolean {

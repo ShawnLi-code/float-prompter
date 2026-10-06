@@ -185,8 +185,11 @@ class FloatPrompterService : Service() {
                 gravity = Gravity.TOP or Gravity.START
                 x = (screenWidth - prompterWidth) / 2
                 y = (70 * density).toInt()
-                alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
+                alpha = 1.0f // 窗口表面始终为 1.0f，彻底消除 Android 12+ 35% 透明度无法点击的 Bug
             }
+
+            val bgAlpha = (prefs.opacity * 255 / 100).coerceIn(40, 255)
+            prompterBinding.rootFloatingView.background?.mutate()?.alpha = bgAlpha
 
             // 2. 灵动小圆球布局参数 (贴屏幕右侧边缘)
             val ballSize = (56 * density).toInt()
@@ -232,7 +235,9 @@ class FloatPrompterService : Service() {
                 val scriptText = prefs.formattedScript.ifEmpty { prefs.rawScript }
                 prompterBinding.tvPrompterContent.text = scriptText
                 prompterBinding.tvPrompterContent.textSize = prefs.fontSizeSp
-                prompterParams.alpha = (prefs.opacity / 100f).coerceIn(0.25f, 1.0f)
+                prompterParams.alpha = 1.0f // 窗口必须始终保持 1.0f，防止 Android 12+ 触控屏蔽拦截
+                val bgAlpha = (prefs.opacity * 255 / 100).coerceIn(40, 255)
+                prompterBinding.rootFloatingView.background?.mutate()?.alpha = bgAlpha
 
                 windowManager.addView(prompterBinding.root, prompterParams)
                 isPrompterAttached = true
@@ -368,19 +373,15 @@ class FloatPrompterService : Service() {
             prompterBinding.layoutMiniSettings.visibility = if (isGone) View.VISIBLE else View.GONE
         }
 
-        // 透明度快捷设置
-        fun setAlpha(value: Float, intPercent: Int) {
-            prompterParams.alpha = value
+        // 透明度快捷设置 (保持 WindowManager.LayoutParams.alpha = 1.0f，仅调节背景色透明度，彻底规避 Android 12+ 触控屏蔽拦截)
+        fun setOpacity(intPercent: Int) {
             prefs.opacity = intPercent
-            if (isPrompterAttached) {
-                try {
-                    windowManager.updateViewLayout(prompterBinding.root, prompterParams)
-                } catch (_: Exception) {}
-            }
+            val bgAlpha = (intPercent * 255 / 100).coerceIn(40, 255)
+            prompterBinding.rootFloatingView.background?.mutate()?.alpha = bgAlpha
         }
-        prompterBinding.btnAlphaLow.setOnClickListener { setAlpha(0.35f, 35) }
-        prompterBinding.btnAlphaMed.setOnClickListener { setAlpha(0.65f, 65) }
-        prompterBinding.btnAlphaHigh.setOnClickListener { setAlpha(0.92f, 92) }
+        prompterBinding.btnAlphaLow.setOnClickListener { setOpacity(35) }
+        prompterBinding.btnAlphaMed.setOnClickListener { setOpacity(65) }
+        prompterBinding.btnAlphaHigh.setOnClickListener { setOpacity(92) }
 
         // 速度调节
         prompterBinding.tvSpeedValue.text = "${prefs.scrollSpeed}档"
